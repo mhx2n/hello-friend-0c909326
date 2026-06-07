@@ -4407,43 +4407,58 @@ def _report_html(title: str, summary: Dict[str, Any], ranking: List[Dict[str, An
     cards_html = ''.join([f"<div class='kv'><div class='k'>{html_escape(str(k))}</div><div class='v'>{html_escape(str(v))}</div></div>" for k,v in cards])
     return f"""
 <!doctype html>
-<html><head><meta charset='utf-8'><style>
+<html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>{html_escape(title)} • Exam Report</title>
+<style>
 {_html_font_css()}
-:root {{{_theme_vars(theme)}}}
-@page {{ size: A4; margin: 14mm 10mm; }}
-html,body{{margin:0;padding:0;background:#ffffff;color:#102030;font-family:'AppBengali','AppSans','AppSymbols','AppEmoji',system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{padding:8px 6px 18px 6px;}}
-.brand{{font-size:18px;font-weight:700;color:#18324B;}}
-.title{{font-size:38px;font-weight:700;line-height:1.15;margin-top:10px;word-break:break-word;}}
-.gen{{font-size:13px;color:#6B7A8B;margin-top:4px;}}
-.grid{{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}}
-.kv{{border-radius:16px;background:#F6FAFD;border:1px solid #DCE8F2;padding:12px 18px;break-inside:avoid;}}
-.k{{font-size:13px;color:#587086;}}
-.v{{font-size:16px;font-weight:700;color:#0F2235;margin-top:4px;white-space:pre-wrap;word-break:break-word;}}
-.section{{font-size:16px;font-weight:700;color:#18324B;margin-top:18px;margin-bottom:10px;}}
-.table{{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed;}}
-.table thead th{{background:var(--table);color:#fff;font-size:12px;padding:10px 10px;text-align:left;}}
-.table thead th:first-child{{border-top-left-radius:12px;border-bottom-left-radius:12px;}}
-.table thead th:last-child{{border-top-right-radius:12px;border-bottom-right-radius:12px;}}
-.table tbody td{{background:#F8FBFE;border-top:1px solid #DFE8F1;border-bottom:1px solid #DFE8F1;padding:10px 10px;font-size:13px;vertical-align:top;word-break:break-word;}}
-.table tbody td:first-child{{border-left:1px solid #DFE8F1;border-top-left-radius:10px;border-bottom-left-radius:10px;}}
-.table tbody td:last-child{{border-right:1px solid #DFE8F1;border-top-right-radius:10px;border-bottom-right-radius:10px;}}
+:root {{{_theme_vars(theme)}; --bg:#f4f7fb; --surface:#ffffff; --border:#e1e8f0; --text:#0f2235; --muted:#5e7388; --soft:#f6fafd; --ok:#1c7c38; --bad:#b94040; --skip:#a77412; }}
+@media (prefers-color-scheme: dark){{
+  :root{{ --bg:#0b1220; --surface:#121a2b; --border:#1f2b40; --text:#e6edf7; --muted:#9aaac0; --soft:#0f1a2e; }}
+}}
+*,*::before,*::after{{box-sizing:border-box;}}
+html,body{{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'AppBengali','AppSans','AppSymbols','AppEmoji',Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%;}}
+.shell{{width:min(960px,100% - 20px);margin:14px auto 28px;}}
+.card{{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.06);padding:16px;}}
+.card + .card{{margin-top:14px;}}
+.brand{{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;}}
+.title{{font-size:clamp(22px,4.5vw,32px);font-weight:800;line-height:1.2;margin-top:4px;word-break:break-word;}}
+.gen{{font-size:12px;color:var(--muted);margin-top:6px;}}
+.grid{{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}}
+.kv{{border-radius:12px;background:var(--soft);border:1px solid var(--border);padding:10px 12px;}}
+.k{{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;}}
+.v{{font-size:15px;font-weight:800;color:var(--text);margin-top:3px;white-space:pre-wrap;word-break:break-word;}}
+.section{{font-size:16px;font-weight:800;color:var(--text);margin:0 0 10px;}}
+.table-wrap{{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--border);}}
+.table{{width:100%;border-collapse:collapse;min-width:560px;}}
+.table thead th{{background:var(--table);color:#fff;font-size:11px;font-weight:700;padding:9px 10px;text-align:left;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}}
+.table tbody td{{background:var(--surface);border-top:1px solid var(--border);padding:9px 10px;font-size:13px;vertical-align:middle;}}
+.table tbody tr:nth-child(even) td{{background:var(--soft);}}
 .center{{text-align:center;}}
-.num{{text-align:right;}}
-.ok{{color:#1C7C38;font-weight:700;}}
-.bad{{color:#B94040;font-weight:700;}}
-.skip{{color:#A77412;font-weight:700;}}
-.primary{{font-size:13px;color:#102030;line-height:1.12;white-space:pre-wrap;word-break:break-word;}}
-.secondary{{font-size:11px;color:#627B90;line-height:1.1;margin-top:2px;white-space:pre-wrap;word-break:break-word;}}
-</style></head><body><div class='page'>
+.num{{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}}
+.ok{{color:var(--ok);font-weight:700;}}
+.bad{{color:var(--bad);font-weight:700;}}
+.skip{{color:var(--skip);font-weight:700;}}
+.primary{{font-size:13px;color:var(--text);line-height:1.25;font-weight:600;word-break:break-word;}}
+.secondary{{font-size:11px;color:var(--muted);line-height:1.2;margin-top:2px;word-break:break-word;}}
+@media (max-width:520px){{
+  .card{{padding:14px;border-radius:14px;}}
+  .v{{font-size:14px;}}
+  .table tbody td{{font-size:12px;padding:8px 9px;}}
+}}
+</style></head><body><div class='shell'>
+<div class='card'>
 <div class='brand'>{html_escape(CONFIG.brand_name)} • Exam Report</div>
 <div class='title'>{html_escape(title)}</div>
 <div class='gen'>Generated at {html_escape(fmt_dt(now_ts()))}</div>
 <div class='grid'>{cards_html}</div>
+</div>
+<div class='card'>
 <div class='section'>Ranking Analysis</div>
-<table class='table'>
-<thead><tr><th style='width:44px'>#</th><th>Name</th><th style='width:88px'>Correct</th><th style='width:88px'>Wrong</th><th style='width:88px'>Skipped</th><th style='width:96px'>Time</th><th style='width:110px'>Score</th></tr></thead>
-<tbody>{''.join(rows)}</tbody></table>
+<div class='table-wrap'><table class='table'>
+<thead><tr><th style='width:42px'>#</th><th>Name</th><th class='num'>Correct</th><th class='num'>Wrong</th><th class='num'>Skipped</th><th class='num'>Time</th><th class='num'>Score</th></tr></thead>
+<tbody>{''.join(rows)}</tbody></table></div>
+</div>
 </div></body></html>
 """
 
@@ -4839,7 +4854,7 @@ async def send_admin_pdf_report(context: ContextTypes.DEFAULT_TYPE, session_id: 
             await context.bot.send_document(
                 uid,
                 document=InputFile(io.BytesIO(html_bytes), filename=f"{pdf_safe_filename(session['title'])}_report.html"),
-                caption=f"📄 {normalize_visual_text(session['title'])} analysis report (open in browser)",
+                caption=f"📄 {normalize_visual_text(session['title'])} — Exam Report",
             )
         except TelegramError as exc:
             logger.warning("Could not send HTML report to %s: %s", uid, exc)
