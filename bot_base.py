@@ -4380,20 +4380,25 @@ def _report_html(title: str, summary: Dict[str, Any], ranking: List[Dict[str, An
     title = normalize_visual_text(title) or 'Exam'
     rows = []
     for item in (ranking or []):
-        primary, sub = finalize_render_labels(item.get('name') or 'Unknown', item.get('sub_name') or '', int(item.get('user_id') or 0) or None)
+        raw_name = normalize_visual_text(item.get('name') or '')
+        raw_sub = normalize_visual_text(item.get('sub_name') or '')
+        primary = raw_name or raw_sub or (f"User {item.get('user_id')}" if item.get('user_id') else 'Unknown')
+        secondary = raw_sub if (raw_sub and raw_sub != primary) else ''
         rows.append(
             "<tr>"
-            f"<td class='center'>{item.get('rank','')}</td>"
-            f"<td><div class='primary'>{html_escape(primary)}</div>" + (f"<div class='secondary'>{html_escape(sub)}</div>" if sub else "") + "</td>"
+            f"<td class='center rank'>{html_escape(item.get('rank',''))}</td>"
+            f"<td class='namecell'><div class='primary'>{html_escape(primary)}</div>"
+            + (f"<div class='secondary'>{html_escape(secondary)}</div>" if secondary else "") +
+            "</td>"
+            f"<td class='num score'>{html_escape(str(item.get('score','0.00')))}</td>"
             f"<td class='num ok'>{html_escape(str(item.get('correct',0)))}</td>"
             f"<td class='num bad'>{html_escape(str(item.get('wrong',0)))}</td>"
             f"<td class='num skip'>{html_escape(str(item.get('skipped',0)))}</td>"
             f"<td class='num time'>{html_escape(str(item.get('time','0s')))}</td>"
-            f"<td class='num'>{html_escape(str(item.get('score','0.00')))}</td>"
             "</tr>"
         )
     if not rows:
-        rows = ["<tr><td class='center'>1</td><td><div class='primary'>No eligible participants</div></td><td class='num ok'>0</td><td class='num bad'>0</td><td class='num skip'>0</td><td class='num time'>0s</td><td class='num'>0.00</td></tr>"]
+        rows = ["<tr><td class='center rank'>1</td><td class='namecell'><div class='primary'>No eligible participants</div></td><td class='num score'>0.00</td><td class='num ok'>0</td><td class='num bad'>0</td><td class='num skip'>0</td><td class='num time'>0s</td></tr>"]
     cards = [
         ('Participants', summary.get('participants','0')),
         ('Questions', summary.get('questions','0')),
@@ -4405,6 +4410,7 @@ def _report_html(title: str, summary: Dict[str, Any], ranking: List[Dict[str, An
         ('Ended', summary.get('ended_at','—')),
     ]
     cards_html = ''.join([f"<div class='kv'><div class='k'>{html_escape(str(k))}</div><div class='v'>{html_escape(str(v))}</div></div>" for k,v in cards])
+    # Prefer system color-emoji fonts first so emoji like 💞 render in colour in the browser.
     return f"""
 <!doctype html>
 <html><head><meta charset='utf-8'>
@@ -4412,39 +4418,48 @@ def _report_html(title: str, summary: Dict[str, Any], ranking: List[Dict[str, An
 <title>{html_escape(title)} • Exam Report</title>
 <style>
 {_html_font_css()}
-:root {{{_theme_vars(theme)}; --bg:#f4f7fb; --surface:#ffffff; --border:#e1e8f0; --text:#0f2235; --muted:#5e7388; --soft:#f6fafd; --ok:#1c7c38; --bad:#b94040; --skip:#a77412; }}
+:root {{{_theme_vars(theme)}; --bg:#f4f7fb; --surface:#ffffff; --border:#e1e8f0; --text:#0f2235; --muted:#5e7388; --soft:#f6fafd; --ok:#1c7c38; --bad:#b94040; --skip:#a77412; --score:#0f2235; }}
 @media (prefers-color-scheme: dark){{
-  :root{{ --bg:#0b1220; --surface:#121a2b; --border:#1f2b40; --text:#e6edf7; --muted:#9aaac0; --soft:#0f1a2e; }}
+  :root{{ --bg:#0b1220; --surface:#121a2b; --border:#1f2b40; --text:#e6edf7; --muted:#9aaac0; --soft:#0f1a2e; --score:#e6edf7; }}
 }}
 *,*::before,*::after{{box-sizing:border-box;}}
-html,body{{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'AppBengali','AppSans','AppSymbols','AppEmoji',Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%;}}
-.shell{{width:min(960px,100% - 20px);margin:14px auto 28px;}}
-.card{{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.06);padding:16px;}}
-.card + .card{{margin-top:14px;}}
-.brand{{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;}}
-.title{{font-size:clamp(22px,4.5vw,32px);font-weight:800;line-height:1.2;margin-top:4px;word-break:break-word;}}
-.gen{{font-size:12px;color:var(--muted);margin-top:6px;}}
-.grid{{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}}
-.kv{{border-radius:12px;background:var(--soft);border:1px solid var(--border);padding:10px 12px;}}
-.k{{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;}}
+html,body{{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'AppBengali',Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji','AppEmoji',sans-serif;-webkit-text-size-adjust:100%;}}
+.shell{{width:min(960px,100% - 16px);margin:12px auto 24px;}}
+.card{{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 6px 20px rgba(15,23,42,.06);padding:14px;}}
+.card + .card{{margin-top:12px;}}
+.brand{{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;}}
+.title{{font-size:clamp(22px,4.5vw,30px);font-weight:800;line-height:1.2;margin-top:4px;word-break:break-word;}}
+.gen{{font-size:12px;color:var(--muted);margin-top:4px;}}
+.grid{{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;}}
+.kv{{border-radius:12px;background:var(--soft);border:1px solid var(--border);padding:9px 11px;}}
+.k{{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;}}
 .v{{font-size:15px;font-weight:800;color:var(--text);margin-top:3px;white-space:pre-wrap;word-break:break-word;}}
 .section{{font-size:16px;font-weight:800;color:var(--text);margin:0 0 10px;}}
 .table-wrap{{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--border);}}
-.table{{width:100%;border-collapse:collapse;min-width:560px;}}
-.table thead th{{background:var(--table);color:#fff;font-size:11px;font-weight:700;padding:9px 10px;text-align:left;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}}
-.table tbody td{{background:var(--surface);border-top:1px solid var(--border);padding:9px 10px;font-size:13px;vertical-align:middle;}}
+.table{{width:100%;border-collapse:collapse;min-width:520px;table-layout:fixed;}}
+.table col.c-rank{{width:38px;}}
+.table col.c-score{{width:70px;}}
+.table col.c-num{{width:62px;}}
+.table col.c-time{{width:64px;}}
+.table thead th{{background:var(--table);color:#fff;font-size:11px;font-weight:700;padding:9px 8px;text-align:left;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}}
+.table tbody td{{background:var(--surface);border-top:1px solid var(--border);padding:9px 8px;font-size:13px;vertical-align:middle;}}
 .table tbody tr:nth-child(even) td{{background:var(--soft);}}
 .center{{text-align:center;}}
+.rank{{font-weight:800;color:var(--muted);}}
 .num{{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}}
+.score{{font-weight:800;color:var(--score);}}
 .ok{{color:var(--ok);font-weight:700;}}
 .bad{{color:var(--bad);font-weight:700;}}
 .skip{{color:var(--skip);font-weight:700;}}
-.primary{{font-size:13px;color:var(--text);line-height:1.25;font-weight:600;word-break:break-word;}}
-.secondary{{font-size:11px;color:var(--muted);line-height:1.2;margin-top:2px;word-break:break-word;}}
+.namecell{{padding-left:8px;padding-right:8px;}}
+.primary{{font-size:13.5px;color:var(--text);line-height:1.25;font-weight:700;word-break:break-word;}}
+.secondary{{font-size:11.5px;color:var(--muted);line-height:1.2;margin-top:2px;word-break:break-word;}}
 @media (max-width:520px){{
-  .card{{padding:14px;border-radius:14px;}}
+  .card{{padding:12px;border-radius:14px;}}
   .v{{font-size:14px;}}
-  .table tbody td{{font-size:12px;padding:8px 9px;}}
+  .table{{min-width:460px;}}
+  .table tbody td{{font-size:12px;padding:8px 6px;}}
+  .table thead th{{padding:8px 6px;}}
 }}
 </style></head><body><div class='shell'>
 <div class='card'>
@@ -4456,7 +4471,8 @@ html,body{{margin:0;padding:0;background:var(--bg);color:var(--text);font-family
 <div class='card'>
 <div class='section'>Ranking Analysis</div>
 <div class='table-wrap'><table class='table'>
-<thead><tr><th style='width:42px'>#</th><th>Name</th><th class='num'>Correct</th><th class='num'>Wrong</th><th class='num'>Skipped</th><th class='num'>Time</th><th class='num'>Score</th></tr></thead>
+<colgroup><col class='c-rank'><col><col class='c-score'><col class='c-num'><col class='c-num'><col class='c-num'><col class='c-time'></colgroup>
+<thead><tr><th>#</th><th>Name</th><th class='num'>Score</th><th class='num'>Correct</th><th class='num'>Wrong</th><th class='num'>Skipped</th><th class='num'>Time</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table></div>
 </div>
 </div></body></html>
