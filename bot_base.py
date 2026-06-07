@@ -4827,8 +4827,9 @@ async def send_admin_pdf_report(context: ContextTypes.DEFAULT_TYPE, session_id: 
         if r.get("sub_name"):
             name = f"{name} {r['sub_name']}"
         compact.append({**r, "name": name, "sub_name": "", "time": r.get("time_label", "0s")})
-    pdf_bytes = await asyncio.to_thread(render_report_pdf, session["title"], summary, compact, theme)
-    thumb_bytes = get_report_thumbnail_bytes(creator_id, session["title"])
+    # Send as HTML file instead of PDF so that Unicode names (Bengali, emoji, etc.) render perfectly
+    html_doc = await asyncio.to_thread(_report_html, session["title"], summary, compact, dict(theme or BUILTIN_THEMES['midnight']))
+    html_bytes = html_doc.encode("utf-8")
     recipients: List[int] = []
     for uid in [creator_id] + list(CONFIG.owner_ids) + all_admin_ids():
         if uid not in recipients:
@@ -4837,12 +4838,11 @@ async def send_admin_pdf_report(context: ContextTypes.DEFAULT_TYPE, session_id: 
         try:
             await context.bot.send_document(
                 uid,
-                document=InputFile(io.BytesIO(pdf_bytes), filename=f"{pdf_safe_filename(session['title'])}_report.pdf"),
-                thumbnail=InputFile(io.BytesIO(thumb_bytes), filename="report_preview.jpg"),
-                caption=f"📄 {normalize_visual_text(session['title'])} analysis report",
+                document=InputFile(io.BytesIO(html_bytes), filename=f"{pdf_safe_filename(session['title'])}_report.html"),
+                caption=f"📄 {normalize_visual_text(session['title'])} analysis report (open in browser)",
             )
         except TelegramError as exc:
-            logger.warning("Could not send PDF report to %s: %s", uid, exc)
+            logger.warning("Could not send HTML report to %s: %s", uid, exc)
 
 
 async def finish_exam(context: ContextTypes.DEFAULT_TYPE, session_id: str, reason: str = "completed") -> None:
