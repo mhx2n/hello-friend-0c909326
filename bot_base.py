@@ -4854,7 +4854,7 @@ async def send_admin_pdf_report(context: ContextTypes.DEFAULT_TYPE, session_id: 
             await context.bot.send_document(
                 uid,
                 document=InputFile(io.BytesIO(html_bytes), filename=f"{pdf_safe_filename(session['title'])}_report.html"),
-                caption=f"📄 {normalize_visual_text(session['title'])} analysis report (open in browser)",
+                caption=f"📄 {normalize_visual_text(session['title'])} — Exam Report",
             )
         except TelegramError as exc:
             logger.warning("Could not send HTML report to %s: %s", uid, exc)
